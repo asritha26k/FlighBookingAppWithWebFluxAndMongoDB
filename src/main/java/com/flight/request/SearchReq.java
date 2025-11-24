@@ -9,4 +9,6 @@ public class SearchReq {
 
 	@NotBlank
 	public String destination;
+
+	
 }

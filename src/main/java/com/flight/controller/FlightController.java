@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.flight.entity.Flight;
 import com.flight.exception.ResourceNotFoundExceptionForResponseEntity;
+import com.flight.request.FlightReq;
 import com.flight.request.SearchReq;
 import com.flight.service.FlightService;
 
@@ -26,7 +27,7 @@ public class FlightController {
 
 	// flight added
 	@PostMapping("/api/flight/airline/inventory/add")
-	public Mono<ResponseEntity<String>> addController(@Valid @RequestBody Flight flight) {
+	public Mono<ResponseEntity<String>> addController(@Valid @RequestBody FlightReq flight) {
 		return flightService.addService(flight);
 	}
 
@@ -40,7 +41,7 @@ public class FlightController {
 	@DeleteMapping("/api/flight/airline/inventory/delete/{flightId}")
 	public Mono<ResponseEntity<Void>> deleteFlightController(@PathVariable String flightId)
 			throws ResourceNotFoundExceptionForResponseEntity {
-		return flightService.deleteFlightService(flightId)\;
+		return flightService.deleteFlightService(flightId);
 	}
 
 }

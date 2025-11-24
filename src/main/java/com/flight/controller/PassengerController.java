@@ -23,30 +23,30 @@ import reactor.core.publisher.Mono;
 
 @RestController
 public class PassengerController {
-	@Autowired
-	PassengerService passengerService;
+    @Autowired
+    PassengerService passengerService;
 
-	@Autowired
-	TicketService tickService;
+    @Autowired
+    TicketService tickService;
 
 
-	// registered the passenger
-	@PostMapping("/api/flight/register/passenger")
-	public Mono<ResponseEntity<String>> addPassenger(@Valid @RequestBody PassengerRequest req) {
-		return passengerService.add(req);
+    // registered the passenger
+    @PostMapping("/api/flight/register/passenger")
+    public Mono<ResponseEntity<String>> addPassenger(@Valid @RequestBody PassengerRequest req) {
+        return passengerService.add(req);
 
-	}
+    }
 
-	@GetMapping("/api/flight/booking/history/{emailId}")
-	public Mono<ResponseEntity<List<Ticket>>> getTickets(@PathVariable String emailId)
-			throws ResourceNotFoundExceptionForResponseEntity {
-		return passengerService.getTickets(emailId);
-	}
+    @GetMapping("/api/flight/booking/history/{emailId}")
+    public Mono<ResponseEntity<List<Ticket>>> getTickets(@PathVariable String emailId)
+            throws ResourceNotFoundExceptionForResponseEntity {
+        return passengerService.getTickets(emailId);
+    }
 
-	@DeleteMapping("/api/flight/booking/cancel/{pnr}")
-	public Mono<ResponseEntity<Void>> getDeleted(@PathVariable String pnr)
-			throws ResourceNotFoundExceptionForResponseEntity {
-		return tickService.getDelete(pnr);
-	}
+    @DeleteMapping("/api/flight/booking/cancel/{pnr}")
+    public Mono<ResponseEntity<Void>> getDeleted(@PathVariable String pnr)
+            throws ResourceNotFoundExceptionForResponseEntity {
+        return tickService.getDelete(pnr);
+    }
 
 }

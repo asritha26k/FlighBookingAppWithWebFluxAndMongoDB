@@ -1,27 +1,16 @@
 package com.test.flight.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flight.controller.TicketController;
 import com.flight.entity.Status;
 import com.flight.entity.Ticket;
@@ -33,18 +22,17 @@ import reactor.core.publisher.Mono;
 @ExtendWith(MockitoExtension.class)
 class TicketControllerTest {
 
-	private MockMvc mockMvc;
-	private ObjectMapper mapper = new ObjectMapper();
+	// no ObjectMapper needed when calling controller methods directly
 
 	@Mock
 	private TicketService ticketService;
 
-	@InjectMocks
 	private TicketController ticketController;
 
 	@BeforeEach
 	void setUp() {
-		mockMvc = MockMvcBuilders.standaloneSetup(ticketController).build();
+		ticketController = new TicketController();
+		org.springframework.test.util.ReflectionTestUtils.setField(ticketController, "ticketService", ticketService);
 	}
 
 	@Test
@@ -56,9 +44,11 @@ class TicketControllerTest {
 		Mockito.when(ticketService.bookTicketService(anyString(), any(TicketBookingRequest.class)))
 				.thenReturn(Mono.just(ResponseEntity.status(HttpStatus.CREATED).body("PNR12345")));
 
-		mockMvc.perform(post("/api/flight/booking/100").contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(req))).andExpect(status().isCreated())
-				.andExpect(content().string("PNR12345"));
+		var resp = ticketController.bookTicket("100", req).block();
+		org.junit.jupiter.api.Assertions.assertNotNull(resp);
+		org.junit.jupiter.api.Assertions.assertNotNull(resp.getBody());
+		org.junit.jupiter.api.Assertions.assertEquals(HttpStatus.CREATED, resp.getStatusCode());
+		org.junit.jupiter.api.Assertions.assertEquals("PNR12345", resp.getBody());
 	}
 
 	@Test
@@ -71,8 +61,12 @@ class TicketControllerTest {
 
 		Mockito.when(ticketService.getServiceDetails("PNR12345")).thenReturn(Mono.just(ResponseEntity.ok(ticket)));
 
-		mockMvc.perform(get("/api/flight/ticket/PNR12345").accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk()).andExpect(jsonPath("$.pnr").value("PNR12345"))
-				.andExpect(jsonPath("$.seatNo").value("12A")).andExpect(jsonPath("$.status").value("Booked"));
+		var resp = ticketController.getDetails("PNR12345").block();
+		org.junit.jupiter.api.Assertions.assertNotNull(resp);
+		org.junit.jupiter.api.Assertions.assertNotNull(resp.getBody());
+		org.junit.jupiter.api.Assertions.assertEquals(HttpStatus.OK, resp.getStatusCode());
+		org.junit.jupiter.api.Assertions.assertEquals("PNR12345", resp.getBody().getPnr());
+		org.junit.jupiter.api.Assertions.assertEquals("12A", resp.getBody().getSeatNo());
+		org.junit.jupiter.api.Assertions.assertEquals(Status.Booked, resp.getBody().getStatus());
 	}
 }

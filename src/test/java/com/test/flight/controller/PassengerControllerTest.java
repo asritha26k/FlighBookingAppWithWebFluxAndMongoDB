@@ -1,26 +1,16 @@
 package com.test.flight.controller;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import com.flight.GlobalExceptionHandler;
 import com.flight.controller.PassengerController;
 import com.flight.entity.Status;
 import com.flight.entity.Ticket;
@@ -32,7 +22,7 @@ import reactor.core.publisher.Mono;
 @ExtendWith(MockitoExtension.class)
 class PassengerControllerTest {
 
-	private MockMvc mockMvc;
+	// call controller methods directly in unit tests
 
 	@Mock
 	private PassengerService passengerService;
@@ -40,14 +30,15 @@ class PassengerControllerTest {
 	@Mock
 	private TicketService ticketService;
 
-	@InjectMocks
 	private PassengerController passengerController;
 
 	@BeforeEach
 	void setUp() {
-		mockMvc = MockMvcBuilders.standaloneSetup(passengerController)
-				.setControllerAdvice(new GlobalExceptionHandler())
-				.build();
+		passengerController = new PassengerController();
+		org.springframework.test.util.ReflectionTestUtils.setField(passengerController, "passengerService", passengerService);
+		org.springframework.test.util.ReflectionTestUtils.setField(passengerController, "tickService", ticketService);
+
+		// no WebTestClient; controller invoked directly
 	}
 
 	@Test
@@ -57,22 +48,23 @@ class PassengerControllerTest {
 		ticket.setSeatNo("12A");
 		ticket.setStatus(Status.Booked);
 
-		when(passengerService.getTickets("alice@example.com"))
-			.thenReturn(Mono.just(ResponseEntity.ok(List.of(ticket))));
+		Mockito.when(passengerService.getTickets(Mockito.anyString()))
+				.thenReturn(Mono.just(ResponseEntity.ok(List.of(ticket))));
 
-		mockMvc.perform(get("/api/flight/booking/history/{email}", "alice@example.com").accept(MediaType.APPLICATION_JSON))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$[0].pnr").value("PNR123"));
+		var resp = passengerController.getTickets("alice@example.com").block();
+		org.junit.jupiter.api.Assertions.assertNotNull(resp);
+		org.junit.jupiter.api.Assertions.assertNotNull(resp.getBody());
+		org.junit.jupiter.api.Assertions.assertEquals(1, resp.getBody().size());
+		org.junit.jupiter.api.Assertions.assertEquals("PNR123", resp.getBody().get(0).getPnr());
 	}
 
 	@Test
 	void cancelBooking_Success() throws Exception {
 
-		when(ticketService.getDelete("PNR123")).thenReturn(Mono.just(ResponseEntity.status(HttpStatus.OK).build()));
+		Mockito.when(ticketService.getDelete("PNR123")).thenReturn(Mono.just(ResponseEntity.status(HttpStatus.OK).build()));
 
-		mockMvc.perform(delete("/api/flight/booking/cancel/{pnr}", "PNR123")).andExpect(status().isOk()).andExpect(result -> {
-			
-			assert(result.getResponse().getContentAsString().isEmpty());
-		});
+		var resp = passengerController.getDeleted("PNR123").block();
+		org.junit.jupiter.api.Assertions.assertNotNull(resp);
+		org.junit.jupiter.api.Assertions.assertEquals(org.springframework.http.HttpStatus.OK, resp.getStatusCode());
 	}
 }

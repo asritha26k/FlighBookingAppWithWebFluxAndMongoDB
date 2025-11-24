@@ -16,6 +16,6 @@ public interface FlightRepository extends ReactiveMongoRepository<Flight, String
 
 	Flux<Flight> findByOriginAndDestination(String origin, String destination);
 
-	Mono<Flight> findByflightId(int flightId);
+	Mono<Flight> findByflightId(String flightId);
 
 }
